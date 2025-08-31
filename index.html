@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tornado Simulation - Enhanced</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            max-width: 300px;
+            transition: all 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #controls.collapsed {
+            padding: 10px;
+        }
+
+        #controls-toggle {
+            background: linear-gradient(135deg, #2d5016, #4a7c3a);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 10px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        #controls-toggle:hover {
+            background: linear-gradient(135deg, #4a7c3a, #5d8f47);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #controls-content {
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        #controls.collapsed #controls-content {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #555;
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: #007bff;
+        }
+
+        #category-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #category-display:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            max-width: 400px;
+            display: none;
+            z-index: 100;
+            border: 2px solid #007bff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #guide-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            z-index: 200;
+        }
+
+        .close-btn {
+            float: right;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        .zone-colors {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .zone-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .zone-color:hover {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 1000;
+        }
+
+        .type-btn {
+            margin: 1px;
+            font-size: 10px;
+            padding: 6px 8px;
+        }
+
+        .info-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .info-section h4 {
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+
+        .effects-section {
+            background: rgba(50, 50, 80, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .effects-section h4 {
+            color: #a8e6cf;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">Loading Enhanced Tornado Simulation...</div>
+    <div id="container"></div>
+
+    <div id="controls" class="collapsed">
+        <button id="controls-toggle">🌪️ Controls</button>
+        <div id="controls-content">
+            <div id="category-display">EF0 - Light Tornado</div>
+
+            <div class="control-group">
+                <label>Wind Speed: <span id="wind-speed-value">65</span> mph</label>
+                <input type="range" id="wind-speed" min="65" max="318" value="65" step="1">
+            </div>
+
+            <div class="control-group">
+                <label>Tornado Category:</label>
+                <button id="ef0" class="category-btn active">EF0</button>
+                <button id="ef1" class="category-btn">EF1</button>
+                <button id="ef2" class="category-btn">EF2</button>
+                <button id="ef3" class="category-btn">EF3</button>
+                <button id="ef4" class="category-btn">EF4</button>
+                <button id="ef5" class="category-btn">EF5</button>
+            </div>
+
+            <div class="control-group">
+                <label>Tornado Type:</label>
+                <button id="classic" class="type-btn active">Classic</button>
+                <button id="rope" class="type-btn">Rope</button>
+                <button id="wedge" class="type-btn">Wedge</button>
+                <button id="multi-vortex" class="type-btn">Multi-Vortex</button>
+                <button id="landspout" class="type-btn">Landspout</button>
+                <button id="waterspout" class="type-btn">Waterspout</button>
+                <button id="gustnado" class="type-btn">Gustnado</button>
+                <button id="stovepipe" class="type-btn">Stovepipe</button>
+                <button id="elephant-trunk" class="type-btn">Elephant Trunk</button>
+                <button id="drill-bit" class="type-btn">Drill Bit</button>
+                <button id="cylinder" class="type-btn">Cylinder</button>
+            </div>
+
+            <div class="control-group">
+                <label>Zone Colors:</label>
+                <div class="zone-colors">
+                    <div class="zone-color" style="background:#FF1A1A" data-zone="eye" title="Eye"></div>
+                    <div class="zone-color" style="background:#0074FF" data-zone="core" title="Core Zone"></div>
+                    <div class="zone-color" style="background:#FF9A1A" data-zone="inner" title="Inner Zone"></div>
+                    <div class="zone-color" style="background:#2ECC40" data-zone="middle" title="Middle Zone"></div>
+                    <div class="zone-color" style="background:#9B30FF" data-zone="outer" title="Outer Zone"></div>
+                </div>
+            </div>
+
+            <div class="effects-section">
+                <h4>Visual Effects</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lightning-toggle">
+                    Lightning Effects
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="flash-toggle" checked>
+                    Background Flash
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="clouds-toggle" checked>
+                    Dynamic Clouds
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="rain-toggle" checked>
+                    Rain Effects
+                </label>
+                <div class="control-group">
+                    <label>Lightning Intensity: <span id="lightning-freq-value">5</span></label>
+                    <input type="range" id="lightning-freq" min="1" max="10" value="5" step="1">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <button id="guide-btn">Guide</button>
+                <button id="reset-view">Reset View</button>
+                <button id="toggle-all-effects">Toggle All Effects</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="info-panel">
+        <button class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+        <h3 id="zone-title">Information Panel</h3>
+        <div id="zone-description">Click on tornado zones, type buttons, or category display to learn more.</div>
+        <div id="zone-bizarre"></div>
+    </div>
+
+    <div id="guide-panel">
+        <button class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+        <h2>Enhanced Tornado Simulation Guide</h2>
+        <h3>Controls:</h3>
+        <p><strong>Wind Speed Slider:</strong> Adjust tornado intensity. Speed automatically changes category when
+            thresholds are reached.</p>
+        <p><strong>Category Buttons (EF0-EF5):</strong> Instantly switch between Enhanced Fujita Scale categories.</p>
+        <p><strong>Visual Effects:</strong></p>
+        <ul>
+            <li><strong>Lightning:</strong> Realistic lightning strikes that increase with tornado intensity</li>
+            <li><strong>Background Flash:</strong> Sky flashes synchronized with lightning</li>
+            <li><strong>Dynamic Clouds:</strong> Volumetric storm clouds with realistic movement</li>
+            <li><strong>Rain Effects:</strong> Precipitation that intensifies with tornado strength</li>
+        </ul>
+        <p><strong>Performance:</strong> Toggle effects off for better performance on slower devices.</p>
+        <h3>Navigation:</h3>
+        <p><strong>Mouse/Touch:</strong> Drag to rotate view, scroll/pinch to zoom, right-click drag to pan. Tap outside
+            panels to hide them.</p>
+    </div>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, tornado, clouds, ground;
+        let particles = [];
+        let particleCount = 30000;
+        let currentCategory = 'EF0';
+        let currentType = 'classic';
+        let windSpeed = 65;
+        let mouse = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+        let infoPanelTimer = null;
+
+        // New variables for enhanced features
+        let lightningGroup = null;
+        let rainParticles = null;
+        let skyMesh = null;
+        let cloudParticles = [];
+        let time = 0;
+        let lastLightningTime = 0;
+        let lightningInterval = 1000; // Default interval for 5 bolts per 5 seconds
+
+        // Effect toggles
+        let effectsEnabled = {
+            lightning: false,
+            flash: true,
+            clouds: true,
+            rain: true
+        };
+
+        let lightningIntensity = 5;
+        let isMobile = false;
+
+        // Tornado categories with Enhanced Fujita Scale data
+        const tornadoCategories = {
+            'EF0': {
+                speed: [65, 85],
+                color: '#a8e6cf',
+                description: 'Light tornado. Causes light damage to chimneys, billboards, and trees.',
+                details: 'With winds of 65–85 mph, EF0 tornadoes are the weakest on the scale. They usually last between 1 and 10 minutes and cause minor damage, like broken branches or loosened roof shingles. While they may look small, they still injure dozens each year, and property losses typically range from a few thousand to tens of thousands of dollars.'
+            },
+            'EF1': {
+                speed: [86, 110],
+                color: '#4ecdc4',
+                description: 'Moderate tornado. Causes moderate damage, peels surface off roofs.',
+                details: 'EF1 tornadoes spin at 86–110 mph and can stick around for 1 to 20 minutes. They rip off parts of roofs, flip cars, and send debris flying. Annual statistics show hundreds of injuries from EF1s, and damages often run into the millions of dollars despite being considered “moderate.”'
+            },
+            'EF2': {
+                speed: [111, 135],
+                color: '#6bcf7f',
+                description: 'Considerable tornado. Causes considerable damage, mobile homes demolished.',
+                details: 'Packing 111–135 mph winds, EF2 tornadoes are serious business. They can stay on the ground for 5 to 30 minutes, ripping apart mobile homes and uprooting large trees. Historically, EF2s account for a significant share of tornado-related fatalities, with damages that can soar past $50 million in a single outbreak.'
+            },
+            'EF3': {
+                speed: [136, 165],
+                color: '#ffd93d',
+                description: 'Severe tornado. Causes severe damage, trains overturned.',
+                details: 'EF3 tornadoes roar with winds of 136–165 mph and can last 10 to 60 minutes. They demolish entire stories of houses and even toss trains off tracks. On record, these storms have killed dozens in one strike, and the cost of destruction can easily exceed $100 million per event.'
+            },
+            'EF4': {
+                speed: [166, 200],
+                color: '#ff6b6b',
+                description: 'Devastating tornado. Causes devastating damage, houses leveled.',
+                details: 'With winds screaming at 166–200 mph, EF4 tornadoes are monsters. They can endure 30 to 90 minutes and leave whole neighborhoods in ruins. Some of the deadliest tornadoes in U.S. history have been EF4s, claiming hundreds of lives and causing losses well into the billions.'
+            },
+            'EF5': {
+                speed: [201, 318],
+                color: '#ff69b4',
+                description: 'Incredible tornado. Causes incredible damage, structures swept away.',
+                details: 'EF5 tornadoes, with winds over 200 mph, are the rarest but most catastrophic. They can last more than an hour, erase towns from the map, and fling debris miles away. The 2011 Joplin EF5 killed 158 people and caused $2.8 billion in damage, a reminder of just how unthinkably destructive this level can be.'
+            }
+
+        };
+
+        // Tornado type information
+        const tornadoTypes = {
+            classic: {
+                title: "Classic Tornado",
+                description: "The most frequently observed tornado type, typically formed from powerful supercell thunderstorms. Classic tornadoes are the ones most often depicted in photographs and storm chaser footage.",
+                characteristics: "Cone-shaped with a visible condensation funnel extending from the cloud base to the ground. They vary in size and intensity but usually maintain a symmetrical, balanced appearance.",
+                formation: "Develops from mesocyclone rotation inside a supercell storm, where strong wind shear and instability allow a funnel cloud to extend downward and tighten into a tornado."
+            },
+            rope: {
+                title: "Rope Tornado",
+                description: "A narrow, snake-like tornado often seen during the tornado's weakening or dissipating stage. Despite their fragile appearance, rope tornadoes can still be destructive.",
+                characteristics: "Thin, elongated, serpentine funnel with irregular or twisting shapes. They can contort dramatically as the parent storm weakens.",
+                formation: "Forms when the tornado’s circulation begins to lose strength, stretching into a rope-like appearance as the vortex thins and dissipates."
+            },
+            wedge: {
+                title: "Wedge Tornado",
+                description: "An extremely wide and powerful tornado that appears broader than its height. These are among the most destructive tornadoes in history.",
+                characteristics: "Massive funnel often exceeding 1 mile (1.6 km) in width, sometimes resembling a large wall of clouds. Its size makes it difficult to distinguish from the storm itself.",
+                formation: "Forms from exceptionally strong, mature supercells with intense mesocyclones that expand horizontally as well as vertically, creating an enormous circulation."
+            },
+            'multi-vortex': {
+                title: "Multi-Vortex Tornado",
+                description: "A tornado that contains two or more smaller subvortices rotating within the main funnel. These smaller vortices can cause extreme localized damage.",
+                characteristics: "Multiple visible funnels or rotating 'whirls' circling inside the main tornado funnel. Damage paths often show narrow streaks of intense destruction.",
+                formation: "Occurs when the main circulation becomes unstable and breaks into smaller, rapidly rotating vortices within the overall tornado structure."
+            },
+            landspout: {
+                title: "Landspout Tornado",
+                description: "A weaker tornado type that forms from the ground upward, rather than descending from a mesocyclone. They are less intense but can still cause damage.",
+                characteristics: "Smooth, narrow, rope-like funnel without strong rotation at the cloud base. Often appears less organized than classic tornadoes.",
+                formation: "Develops along convergence zones and boundary layers where surface winds collide, stretching vertical vorticity into a tornado without the need for a supercell."
+            },
+            waterspout: {
+                title: "Waterspout",
+                description: "A tornado that forms over bodies of water, such as lakes, rivers, or oceans. Waterspouts can occasionally move onshore, becoming damaging tornadoes.",
+                characteristics: "Typically weaker than land tornadoes, often appearing as thin funnels reaching down to water surfaces with spray rings around their base.",
+                formation: "Can form in fair-weather conditions from cumulus clouds or as tornadic waterspouts from severe thunderstorms. Both types originate over water and draw up moisture."
+            },
+            gustnado: {
+                title: "Gustnado",
+                description: "A small, short-lived whirlwind that forms along thunderstorm gust fronts. Unlike true tornadoes, gustnadoes are not connected to the cloud base.",
+                characteristics: "Weak, chaotic rotation that may lift dust or debris, giving it a tornado-like appearance, but usually lasts only seconds to minutes.",
+                formation: "Created by sudden changes in wind direction and speed along storm outflow boundaries, where horizontal shear can briefly spin into vertical rotation."
+            },
+            stovepipe: {
+                title: "Stovepipe Tornado",
+                description: "A tall, cylindrical tornado that maintains nearly the same width from cloud base to ground. These are often more stable in appearance than other tornadoes.",
+                characteristics: "Straight, uniform funnel resembling a stovepipe, sometimes appearing sleek and well-defined. Width remains consistent throughout.",
+                formation: "Forms with strong, well-organized mesocyclone circulation that maintains uniform structure through its lifespan."
+            },
+            'elephant-trunk': {
+                title: "Elephant Trunk Tornado",
+                description: "A tornado with a thin, flexible, and often curved appearance resembling an elephant’s trunk. It is often one of the more visually dramatic tornado forms.",
+                characteristics: "Slender funnel that curves or bends as it extends toward the ground. It may sway and oscillate due to variations in wind patterns.",
+                formation: "Occurs when differing upper-level and lower-level winds cause the funnel to bend or tilt, shaping its trunk-like appearance."
+            },
+            'drill-bit': {
+                title: "Drill Bit Tornado",
+                description: "An extremely narrow and highly intense tornado. Though small in diameter, drill-bit tornadoes can produce devastating wind speeds.",
+                characteristics: "Very thin funnel with tightly wound circulation, sometimes appearing almost pencil-like. Despite its size, capable of extreme localized damage.",
+                formation: "Forms when vertical wind shear and instability are concentrated into a very tight rotation, producing a compact but violent vortex."
+            },
+            cylinder: {
+                title: "Cylinder Tornado",
+                description: "A thick, barrel-shaped tornado with nearly equal width from ground to cloud base. It is one of the most stable and powerful tornado shapes.",
+                characteristics: "Massive, solid-looking funnel resembling a cylinder or barrel, often darker in color due to heavy condensation and debris.",
+                formation: "Develops from strong, broad mesocyclones with deep circulation, maintaining steady structure as the storm matures."
+            }
+
+        };
+
+        // Zone information
+        const zoneInfo = {
+            eye: {
+                title: "Eye – Center of Circulation",
+                description: "The relatively calm, low-pressure center of the tornado where winds temporarily weaken and debris may appear to fall straight down.",
+                details: "Air pressure in the eye can drop more than 100 millibars below the surrounding atmosphere, creating a suction effect that pulls debris and even water upward. The eye is often short-lived and unstable in tornadoes, unlike in hurricanes.",
+                bizarre: "Some tornado eyewitnesses report seeing blue or green glowing light inside the eye, thought to be caused by electrical discharges or the reflection of city lights on airborne debris."
+            },
+            core: {
+                title: "Core Zone – Maximum Circulation",
+                description: "The zone of peak intensity where the tornado’s narrowest and fastest winds occur, often exceeding 200 mph (322 km/h).",
+                details: "This is where the Enhanced Fujita (EF) scale’s EF4–EF5 destruction happens. Houses can be completely swept off foundations, and vehicles thrown over a mile. Radar scans show rapid Doppler velocity couplets here.",
+                bizarre: "Objects pulled into the core have been reported to vanish into the funnel and reappear miles away, sometimes completely intact—like chickens plucked of feathers but still alive, or money scattered over entire counties."
+            },
+            inner: {
+                title: "Inner Zone – Downdraft & Intense Rotation",
+                description: "A region of violent winds spiraling downward and inward, concentrating destructive power just outside the core.",
+                details: "Winds here can strip asphalt off roads, debark trees, and scour farmland down to bare soil. The chaotic turbulence makes survival nearly impossible without underground shelter.",
+                bizarre: "Eyewitnesses in rare cases claim to have seen fish, frogs, and even turtles raining down from this zone—likely sucked from ponds and rivers by the tornado’s powerful suction vortices."
+            },
+            middle: {
+                title: "Middle Zone – Main Circulation Column",
+                description: "The dominant rotating column of air, carrying huge amounts of debris upward in a helical motion.",
+                details: "This zone feeds energy toward the core and eye. It contains multiple suction vortices that orbit each other at terrifying speeds, each capable of causing localized EF5 damage inside an already-destructive tornado.",
+                bizarre: "Farm machinery weighing several tons has been found embedded in fields miles away, hurled by the middle zone’s vortices with force comparable to explosive artillery."
+            },
+            outer: {
+                title: "Outer Zone – Inflow & Updraft Region",
+                description: "The vast area of inflow winds that spiral toward the tornado, feeding it with warm, moist air from miles away.",
+                details: "Strong inflow jets can exceed 60–100 mph (97–161 km/h) and drag loose objects, dust, and debris across the ground toward the funnel. This region helps maintain the tornado’s energy cycle.",
+                bizarre: "People outside the visible funnel sometimes report being pulled off their feet and dragged horizontally toward the tornado, even when they thought they were at a safe distance. In rare cases, clothing was stripped from survivors without major injuries."
+            }
+        };
+
+        // Initialize the simulation
+        function init() {
+            // Detect mobile
+            isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
+
+            // Adjust for mobile performance
+            if (isMobile) {
+                particleCount = 15000;
+                effectsEnabled.rain = false; // Disable rain on mobile by default
+            }
+
+            // Create scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x1a1a2e, 100, 1000);
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 50, 120);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: !isMobile });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+            renderer.setClearColor(0x0f0f1e);
+            renderer.shadowMap.enabled = !isMobile;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Create environment
+            createSky();
+            createEnvironment();
+            createLightning();
+            createRain();
+
+            // Create tornado
+            createTornado();
+
+            // Setup controls and event listeners
+            setupControls();
+            setupEventListeners();
+
+            // Start animation
+            animate();
+
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function createSky() {
+            // Create gradient sky shader
+            const skyGeometry = new THREE.SphereGeometry(900, 32, 32);
+            const skyMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x0f0f1e) },
+                    bottomColor: { value: new THREE.Color(0x2a2a3e) },
+                    offset: { value: 100 },
+                    exponent: { value: 0.6 },
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    uniform float time;
+                    varying vec3 vWorldPosition;
+                    
+                    void main() {
+                        float h = normalize(vWorldPosition + offset).y;
+                        float lightning = ${effectsEnabled.flash ? 'step(0.995, sin(time * 100.0)) * 0.5' : '0.0'};
+                        vec3 color = mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0));
+                        color += vec3(lightning);
+                        gl_FragColor = vec4(color, 1.0);
+                    }
+                `,
+                side: THREE.BackSide
+            });
+
+            skyMesh = new THREE.Mesh(skyGeometry, skyMaterial);
+            scene.add(skyMesh);
+        }
+
+        function createLightning() {
+            lightningGroup = new THREE.Group();
+            scene.add(lightningGroup);
+        }
+
+        function triggerLightning() {
+            if (!effectsEnabled.lightning) return;
+
+            // Clear previous lightning
+            while (lightningGroup.children.length > 0) {
+                lightningGroup.remove(lightningGroup.children[0]);
+            }
+
+            // Create main bolt
+            const points = [];
+            const startY = 150 + Math.random() * 50;
+            const endY = -5;
+            const startX = (Math.random() - 0.5) * 200;
+            const startZ = (Math.random() - 0.5) * 200;
+
+            let currentPoint = new THREE.Vector3(startX, startY, startZ);
+            points.push(currentPoint.clone());
+
+            const segments = 15 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < segments; i++) {
+                const t = i / segments;
+                const nextY = startY + (endY - startY) * t;
+                const deviation = (1 - t) * 20;
+
+                currentPoint = new THREE.Vector3(
+                    currentPoint.x + (Math.random() - 0.5) * deviation,
+                    nextY,
+                    currentPoint.z + (Math.random() - 0.5) * deviation
+                );
+                points.push(currentPoint.clone());
+
+                // Add branches based on intensity
+                if (Math.random() > (0.9 - lightningIntensity / 50) && i < segments - 3) {
+                    const branchPoints = [currentPoint.clone()];
+                    const branchLength = 3 + Math.floor(Math.random() * 5);
+                    let branchPoint = currentPoint.clone();
+
+                    for (let j = 0; j < branchLength; j++) {
+                        branchPoint = new THREE.Vector3(
+                            branchPoint.x + (Math.random() - 0.5) * 10,
+                            branchPoint.y - 5,
+                            branchPoint.z + (Math.random() - 0.5) * 10
+                        );
+                        branchPoints.push(branchPoint.clone());
+                    }
+
+                    const branchGeometry = new THREE.BufferGeometry().setFromPoints(branchPoints);
+                    const branchMaterial = new THREE.LineBasicMaterial({
+                        color: 0xffffff,
+                        linewidth: 1 + lightningIntensity / 5,
+                        transparent: true,
+                        opacity: 0.6 + lightningIntensity / 20
+                    });
+                    const branchLine = new THREE.Line(branchGeometry, branchMaterial);
+                    lightningGroup.add(branchLine);
+                }
+            }
+
+            // Create main bolt geometry
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                linewidth: 3 + lightningIntensity / 2,
+                transparent: true,
+                opacity: 1
+            });
+
+            const lightning = new THREE.Line(geometry, material);
+            lightningGroup.add(lightning);
+
+            // Flash effect
+            if (effectsEnabled.flash) {
+                const flash = new THREE.PointLight(0x9999ff, 5 + lightningIntensity, 500);
+                flash.position.set(startX, startY / 2, startZ);
+                scene.add(flash);
+
+                // Fade out
+                setTimeout(() => {
+                    scene.remove(flash);
+                    while (lightningGroup.children.length > 0) {
+                        lightningGroup.remove(lightningGroup.children[0]);
+                    }
+                }, 300 + Math.random() * 400);
+            }
+        }
+
+        function createRain() {
+            if (!effectsEnabled.rain || isMobile) return;
+
+            const rainCount = 5000;
+            const rainGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(rainCount * 3);
+            const velocities = new Float32Array(rainCount);
+
+            for (let i = 0; i < rainCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 400;
+                positions[i * 3 + 1] = Math.random() * 200;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+                velocities[i] = 0.5 + Math.random() * 0.5;
+            }
+
+            rainGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            rainGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 1));
+
+            const rainMaterial = new THREE.PointsMaterial({
+                color: 0x5588aa,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            rainParticles = new THREE.Points(rainGeometry, rainMaterial);
+            scene.add(rainParticles);
+        }
+
+        function updateRain() {
+            if (!rainParticles || !effectsEnabled.rain) return;
+
+            const positions = rainParticles.geometry.attributes.position.array;
+            const velocities = rainParticles.geometry.attributes.velocity.array;
+
+            for (let i = 0; i < positions.length / 3; i++) {
+                positions[i * 3 + 1] -= velocities[i] * (windSpeed / 50);
+
+                // Reset if below ground
+                if (positions[i * 3 + 1] < -5) {
+                    positions[i * 3 + 1] = 200;
+                    positions[i * 3] = (Math.random() - 0.5) * 400;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+                }
+
+                // Wind effect from tornado
+                const x = positions[i * 3];
+                const z = positions[i * 3 + 2];
+                const distance = Math.sqrt(x * x + z * z);
+
+                if (distance < 100) {
+                    const angle = Math.atan2(z, x);
+                    const force = (100 - distance) / 100 * windSpeed / 100;
+                    positions[i * 3] += Math.cos(angle + Math.PI / 2) * force;
+                    positions[i * 3 + 2] += Math.sin(angle + Math.PI / 2) * force;
+                }
+            }
+
+            rainParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function createEnvironment() {
+            // Create ground with better texture
+            const groundGeometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
+            const groundMaterial = new THREE.MeshLambertMaterial({
+                color: 0x1a2f0a,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            // Add vertex displacement for terrain
+            const vertices = groundGeometry.attributes.position.array;
+            for (let i = 0; i < vertices.length; i += 3) {
+                vertices[i + 2] = Math.random() * 0.5 - 0.25;
+            }
+            groundGeometry.computeVertexNormals();
+
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -5;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Create volumetric clouds
+            clouds = new THREE.Group();
+
+            for (let i = 0; i < 30; i++) {
+                const cloudGroup = new THREE.Group();
+
+                // Create layered cloud structure
+                for (let j = 0; j < 5; j++) {
+                    const size = 10 + Math.random() * 20;
+                    const geometry = new THREE.SphereGeometry(size, 8, 6);
+                    const material = new THREE.MeshLambertMaterial({
+                        color: 0x444455,
+                        transparent: true,
+                        opacity: 0.4 + Math.random() * 0.3
+                    });
+
+                    const cloudPart = new THREE.Mesh(geometry, material);
+                    cloudPart.position.set(
+                        (Math.random() - 0.5) * size,
+                        (Math.random() - 0.5) * size * 0.5,
+                        (Math.random() - 0.5) * size
+                    );
+                    cloudPart.scale.set(
+                        1 + Math.random() * 0.5,
+                        0.6 + Math.random() * 0.3,
+                        1 + Math.random() * 0.5
+                    );
+                    cloudGroup.add(cloudPart);
+                }
+
+                cloudGroup.position.set(
+                    (Math.random() - 0.5) * 800,
+                    80 + Math.random() * 60,
+                    -200 - Math.random() * 300
+                );
+
+                cloudParticles.push({
+                    group: cloudGroup,
+                    speed: 0.1 + Math.random() * 0.2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.001
+                });
+
+                clouds.add(cloudGroup);
+            }
+
+            scene.add(clouds);
+
+            // Enhanced lighting
+            const ambientLight = new THREE.AmbientLight(0x303040, 0.4);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(100, 200, 100);
+            directionalLight.castShadow = !isMobile;
+            if (!isMobile) {
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 500;
+            }
+            scene.add(directionalLight);
+
+            // Add subtle rim light
+            const rimLight = new THREE.DirectionalLight(0x4466aa, 0.3);
+            rimLight.position.set(-100, 100, 100);
+            scene.add(rimLight);
+        }
+
+        function createTornado() {
+            if (tornado) {
+                scene.remove(tornado);
+                particles = [];
+            }
+
+            tornado = new THREE.Group();
+
+            // Create particle system for each zone
+            const zones = ['eye', 'core', 'inner', 'middle', 'outer'];
+            const zoneColors = [0xFF1A1A, 0x0074FF, 0xFF9A1A, 0x2ECC40, 0x9B30FF];
+
+            zones.forEach((zone, zoneIndex) => {
+                const zoneParticles = [];
+                const particlesPerZone = Math.floor(particleCount / zones.length);
+
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particlesPerZone * 3);
+                const velocities = new Float32Array(particlesPerZone * 3);
+
+                for (let i = 0; i < particlesPerZone; i++) {
+                    const i3 = i * 3;
+
+                    let maxHeight = 100;
+                    if (currentType === 'gustnado') maxHeight = 35;
+                    if (currentType === 'landspout' || currentType === 'waterspout') maxHeight = 80;
+                    if (currentType === 'drill-bit') maxHeight = 60;
+                    if (currentType === 'elephant-trunk') maxHeight = 85;
+
+                    const height = Math.random() * maxHeight;
+                    const radius = getTornadoRadius(height, zone, zoneIndex);
+                    const angle = Math.random() * Math.PI * 2;
+
+                    positions[i3] = Math.cos(angle) * radius;
+                    positions[i3 + 1] = height;
+                    positions[i3 + 2] = Math.sin(angle) * radius;
+
+                    velocities[i3] = 0;
+                    velocities[i3 + 1] = 0;
+                    velocities[i3 + 2] = 0;
+
+                    zoneParticles.push({
+                        zone: zone,
+                        zoneIndex: zoneIndex,
+                        originalRadius: radius,
+                        angle: angle,
+                        height: height,
+                        maxHeight: maxHeight,
+                        speed: (windSpeed / 100) * (5 - zoneIndex),
+                        curve: currentType === 'elephant-trunk' ? Math.random() * Math.PI * 2 : 0
+                    });
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const context = canvas.getContext('2d');
+
+                const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 20);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, 64, 64);
+
+                const texture = new THREE.CanvasTexture(canvas);
+
+                const material = new THREE.PointsMaterial({
+                    color: zoneColors[zoneIndex],
+                    size: isMobile ? 0.6 + zoneIndex * 0.08 : 0.8 + zoneIndex * 0.1,
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.95,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true,
+                    alphaTest: 0.1
+                });
+
+                const points = new THREE.Points(geometry, material);
+                points.userData = { zone: zone, particles: zoneParticles };
+                tornado.add(points);
+                particles.push(...zoneParticles);
+            });
+
+            scene.add(tornado);
+        }
+
+        function getTornadoRadius(height, zone, zoneIndex) {
+            const baseRadius = 5 + zoneIndex * 8;
+            const heightFactor = 1 - (height / 100) * 0.7;
+
+            switch (currentType) {
+                case 'rope':
+                    return baseRadius * 0.3 * heightFactor;
+                case 'wedge':
+                    return baseRadius * 2 * heightFactor;
+                case 'multi-vortex':
+                    const vortexOffset = Math.sin(height * 0.1 + zoneIndex) * 5;
+                    return baseRadius * heightFactor + vortexOffset;
+                case 'landspout':
+                    return (baseRadius * 0.4) * (1 - (height / 100) * 0.3);
+                case 'waterspout':
+                    return (baseRadius * 0.5) * (1 - (height / 100) * 0.4);
+                case 'gustnado':
+                    const gustHeight = Math.min(height, 30);
+                    return (baseRadius * 1.5) * (1 - (gustHeight / 30) * 0.8);
+                case 'stovepipe':
+                    return baseRadius * 0.8 * (1 - (height / 100) * 0.2);
+                case 'elephant-trunk':
+                    const curve = Math.sin(height * 0.05) * 3;
+                    return (baseRadius * 0.6 * heightFactor) + curve;
+                case 'drill-bit':
+                    return baseRadius * 0.15 * heightFactor;
+                case 'cylinder':
+                    return baseRadius * 1.2 * (1 - (height / 100) * 0.1);
+                default:
+                    return baseRadius * heightFactor;
+            }
+        }
+
+        function updateTornadoMotion() {
+            tornado.children.forEach((points, zoneIndex) => {
+                const positions = points.geometry.attributes.position.array;
+                const zoneParticles = points.userData.particles;
+
+                for (let i = 0; i < zoneParticles.length; i++) {
+                    const particle = zoneParticles[i];
+                    const i3 = i * 3;
+
+                    particle.angle += particle.speed * 0.01 * (windSpeed / 100);
+
+                    let radius = getTornadoRadius(particle.height, particle.zone, particle.zoneIndex);
+                    let xPos = Math.cos(particle.angle) * radius;
+                    let zPos = Math.sin(particle.angle) * radius;
+
+                    if (currentType === 'elephant-trunk') {
+                        particle.curve += 0.02;
+                        const curveOffset = Math.sin(particle.curve + particle.height * 0.1) * 15;
+                        xPos += curveOffset;
+                    }
+
+                    positions[i3] = xPos;
+                    positions[i3 + 1] = particle.height;
+                    positions[i3 + 2] = zPos;
+
+                    particle.height += (Math.random() - 0.5) * 0.5;
+                    if (particle.height < 0) particle.height = 0;
+                    if (particle.height > particle.maxHeight) particle.height = particle.maxHeight;
+                }
+
+                points.geometry.attributes.position.needsUpdate = true;
+            });
+        }
+
+        function setupControls() {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let rotationSpeed = 0.005;
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+
+                if (e.buttons === 1) {
+                    const spherical = new THREE.Spherical();
+                    spherical.setFromVector3(camera.position);
+                    spherical.theta -= deltaMove.x * rotationSpeed;
+                    spherical.phi += deltaMove.y * rotationSpeed;
+                    spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                    camera.position.setFromSpherical(spherical);
+                    camera.lookAt(0, 25, 0);
+                }
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!isDragging || e.touches.length !== 1) return;
+
+                const deltaMove = {
+                    x: e.touches[0].clientX - previousMousePosition.x,
+                    y: e.touches[0].clientY - previousMousePosition.y
+                };
+
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaMove.x * rotationSpeed;
+                spherical.phi += deltaMove.y * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 25, 0);
+
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+
+            renderer.domElement.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            renderer.domElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.05;
+                const direction = e.deltaY > 0 ? 1 : -1;
+                camera.position.multiplyScalar(1 + direction * zoomSpeed);
+
+                const distance = camera.position.length();
+                if (distance < 20) camera.position.setLength(20);
+                if (distance > 300) camera.position.setLength(300);
+            });
+
+            renderer.domElement.addEventListener('click', onTornadoClick);
+            renderer.domElement.addEventListener('touchend', onTornadoClick);
+        }
+
+        function onTornadoClick(event) {
+            event.preventDefault();
+            const isTouch = event.type === 'touchend';
+            const clientX = isTouch ? event.changedTouches[0].clientX : event.clientX;
+            const clientY = isTouch ? event.changedTouches[0].clientY : event.clientY;
+
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(tornado.children);
+            if (intersects.length > 0) {
+                const zone = intersects[0].object.userData.zone;
+                event.stopPropagation();
+                showZoneInfo(zone);
+            } else {
+                // Hide panels if clicking/tapping outside tornado and panels
+                hidePanels(event);
+            }
+        }
+
+        function hidePanels(event) {
+            const isTouch = event.type === 'touchend';
+            const target = isTouch ? document.elementFromPoint(
+                event.changedTouches[0].clientX,
+                event.changedTouches[0].clientY
+            ) : event.target;
+
+            const controls = document.getElementById('controls');
+            const infoPanel = document.getElementById('info-panel');
+            const guidePanel = document.getElementById('guide-panel');
+
+            // Check if click/tap is outside controls, info panel, and guide panel
+            if (!controls.contains(target) &&
+                !infoPanel.contains(target) &&
+                !guidePanel.contains(target)) {
+                controls.classList.add('collapsed');
+                document.getElementById('controls-toggle').textContent = '🌪️ Controls';
+                infoPanel.style.display = 'none';
+                guidePanel.style.display = 'none';
+                clearTimeout(infoPanelTimer);
+            }
+        }
+
+        function showZoneInfo(zone) {
+            const panel = document.getElementById('info-panel');
+            const title = document.getElementById('zone-title');
+            const description = document.getElementById('zone-description');
+            const bizarre = document.getElementById('zone-bizarre');
+
+            const info = zoneInfo[zone];
+            title.textContent = info.title;
+            description.innerHTML = `
+                <div class="info-section">
+                    <h4>Description:</h4>
+                    <p>${info.description}</p>
+                </div>
+                <div class="info-section">
+                    <h4>Details:</h4>
+                    <p>${info.details}</p>
+                </div>
+                <div class="info-section">
+                    <h4>Bizarre:</h4>
+                    <p>${info.bizarre}</p>
+                </div>
+            `;
+            panel.style.display = 'block';
+
+            clearTimeout(infoPanelTimer);
+            infoPanelTimer = setTimeout(() => {
+                panel.style.display = 'none';
+            }, 8000);
+        }
+
+        function showTypeInfo(type) {
+            const panel = document.getElementById('info-panel');
+            const title = document.getElementById('zone-title');
+            const description = document.getElementById('zone-description');
+
+            const info = tornadoTypes[type];
+            title.textContent = info.title;
+            description.innerHTML = `
+                <div class="info-section">
+                    <h4>Description:</h4>
+                    <p>${info.description}</p>
+                </div>
+                <div class="info-section">
+                    <h4>Characteristics:</h4>
+                    <p>${info.characteristics}</p>
+                </div>
+                <div class="info-section">
+                    <h4>Formation:</h4>
+                    <p>${info.formation}</p>
+                </div>
+            `;
+            panel.style.display = 'block';
+
+            clearTimeout(infoPanelTimer);
+            infoPanelTimer = setTimeout(() => {
+                panel.style.display = 'none';
+            }, 8000);
+        }
+
+        function showCategoryInfo(category) {
+            const panel = document.getElementById('info-panel');
+            const title = document.getElementById('zone-title');
+            const description = document.getElementById('zone-description');
+
+            const info = tornadoCategories[category];
+            title.textContent = `${category} - Enhanced Fujita Scale`;
+            description.innerHTML = `
+                <div class="info-section">
+                    <h4>Wind Speed Range:</h4>
+                    <p>${info.speed[0]} - ${info.speed[1]} mph</p>
+                </div>
+                <div class="info-section">
+                    <h4>Damage Description:</h4>
+                    <p>${info.description}</p>
+                </div>
+                <div class="info-section">
+                    <h4>Statistical Details:</h4>
+                    <p>${info.details}</p>
+                </div>
+            `;
+            panel.style.display = 'block';
+
+            clearTimeout(infoPanelTimer);
+            infoPanelTimer = setTimeout(() => {
+                panel.style.display = 'none';
+            }, 8000);
+        }
+
+        function updateCategory() {
+            const categoryDisplay = document.getElementById('category-display');
+            const category = getCurrentCategory(windSpeed);
+
+            if (category !== currentCategory) {
+                currentCategory = category;
+                updateCategoryButtons();
+                recreateTornado();
+            }
+
+            categoryDisplay.textContent = `${currentCategory} - ${getCategoryName(currentCategory)}`;
+        }
+
+        function getCurrentCategory(speed) {
+            for (const [cat, data] of Object.entries(tornadoCategories)) {
+                if (speed >= data.speed[0] && speed <= data.speed[1]) {
+                    return cat;
+                }
+            }
+            return 'EF5';
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                'EF0': 'Light Tornado',
+                'EF1': 'Moderate Tornado',
+                'EF2': 'Considerable Tornado',
+                'EF3': 'Severe Tornado',
+                'EF4': 'Devastating Tornado',
+                'EF5': 'Incredible Tornado'
+            };
+            return names[category];
+        }
+
+        function updateCategoryButtons() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(currentCategory.toLowerCase()).classList.add('active');
+        }
+
+        function recreateTornado() {
+            createTornado();
+        }
+
+        function resetView() {
+            camera.position.set(0, 50, 120);
+            camera.lookAt(0, 25, 0);
+        }
+
+        function setupEventListeners() {
+            // Wind speed slider
+            const windSpeedSlider = document.getElementById('wind-speed');
+            const windSpeedValue = document.getElementById('wind-speed-value');
+
+            windSpeedSlider.addEventListener('input', (e) => {
+                windSpeed = parseInt(e.target.value);
+                windSpeedValue.textContent = windSpeed;
+                updateCategory();
+            });
+
+            // Category buttons
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const category = e.target.id.toUpperCase();
+                    const speedRange = tornadoCategories[category].speed;
+                    windSpeed = speedRange[0];
+                    windSpeedSlider.value = windSpeed;
+                    windSpeedValue.textContent = windSpeed;
+                    currentCategory = category;
+                    updateCategoryButtons();
+                    recreateTornado();
+                    updateCategory();
+                    showCategoryInfo(category);
+                });
+            });
+
+            // Type buttons
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentType = e.target.id;
+                    recreateTornado();
+                    showTypeInfo(currentType);
+                });
+            });
+
+            // Zone color buttons
+            document.querySelectorAll('.zone-color').forEach(color => {
+                color.addEventListener('click', (e) => {
+                    const zone = e.target.dataset.zone;
+                    showZoneInfo(zone);
+                });
+            });
+
+            // Category display click
+            document.getElementById('category-display').addEventListener('click', () => {
+                showCategoryInfo(currentCategory);
+            });
+
+            // Guide button
+            document.getElementById('guide-btn').addEventListener('click', () => {
+                document.getElementById('guide-panel').style.display = 'block';
+            });
+
+            // Reset view button
+            document.getElementById('reset-view').addEventListener('click', resetView);
+
+            // Effects toggles
+            document.getElementById('lightning-toggle').addEventListener('change', (e) => {
+                effectsEnabled.lightning = e.target.checked;
+                if (!effectsEnabled.lightning) {
+                    // Clear any existing lightning when disabled
+                    while (lightningGroup.children.length > 0) {
+                        lightningGroup.remove(lightningGroup.children[0]);
+                    }
+                }
+                lastLightningTime = performance.now(); // Reset timer when toggling
+            });
+
+            document.getElementById('flash-toggle').addEventListener('change', (e) => {
+                effectsEnabled.flash = e.target.checked;
+                // Update sky shader dynamically
+                createSky();
+            });
+
+            document.getElementById('clouds-toggle').addEventListener('change', (e) => {
+                effectsEnabled.clouds = e.target.checked;
+                if (clouds) {
+                    clouds.visible = e.target.checked;
+                }
+            });
+
+            document.getElementById('rain-toggle').addEventListener('change', (e) => {
+                effectsEnabled.rain = e.target.checked;
+                if (rainParticles) {
+                    rainParticles.visible = e.target.checked;
+                }
+            });
+
+            // Lightning intensity
+            document.getElementById('lightning-freq').addEventListener('input', (e) => {
+                lightningIntensity = parseInt(e.target.value);
+                document.getElementById('lightning-freq-value').textContent = lightningIntensity;
+                // Update interval: 5 seconds divided by number of bolts
+                lightningInterval = lightningIntensity > 0 ? 5000 / lightningIntensity : 5000;
+                lastLightningTime = performance.now(); // Reset timer to apply new interval immediately
+            });
+
+            // Toggle all effects button
+            document.getElementById('toggle-all-effects').addEventListener('click', () => {
+                const allOn = effectsEnabled.lightning && effectsEnabled.flash && effectsEnabled.clouds && effectsEnabled.rain;
+
+                effectsEnabled.lightning = !allOn;
+                effectsEnabled.flash = !allOn;
+                effectsEnabled.clouds = !allOn;
+                effectsEnabled.rain = !allOn;
+
+                document.getElementById('lightning-toggle').checked = effectsEnabled.lightning;
+                document.getElementById('flash-toggle').checked = effectsEnabled.flash;
+                document.getElementById('clouds-toggle').checked = effectsEnabled.clouds;
+                document.getElementById('rain-toggle').checked = effectsEnabled.rain;
+
+                if (clouds) clouds.visible = effectsEnabled.clouds;
+                if (rainParticles) rainParticles.visible = effectsEnabled.rain;
+                if (!effectsEnabled.lightning) {
+                    // Clear any existing lightning when disabled
+                    while (lightningGroup.children.length > 0) {
+                        lightningGroup.remove(lightningGroup.children[0]);
+                    }
+                }
+                // Update sky shader for flash toggle
+                createSky();
+                lastLightningTime = performance.now(); // Reset timer when toggling
+            });
+
+            // Controls toggle
+            document.getElementById('controls-toggle').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const controls = document.getElementById('controls');
+                controls.classList.toggle('collapsed');
+                const toggleBtn = document.getElementById('controls-toggle');
+                toggleBtn.textContent = controls.classList.contains('collapsed') ? '🌪️ Controls' : '🌪️ Hide Controls';
+            });
+
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Add click and touch listeners for hiding panels
+            document.addEventListener('click', hidePanels);
+            document.addEventListener('touchend', hidePanels);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += 0.01;
+
+            // Update tornado motion
+            updateTornadoMotion();
+
+            // Update sky
+            if (skyMesh) {
+                skyMesh.material.uniforms.time.value = time;
+            }
+
+            // Trigger lightning based on interval
+            if (effectsEnabled.lightning) {
+                const currentTime = performance.now();
+                if (currentTime - lastLightningTime >= lightningInterval) {
+                    triggerLightning();
+                    lastLightningTime = currentTime;
+                }
+            }
+
+            // Update rain
+            updateRain();
+
+            // Animate clouds
+            if (effectsEnabled.clouds) {
+                cloudParticles.forEach((cloud) => {
+                    cloud.group.position.x += cloud.speed;
+                    cloud.group.rotation.y += cloud.rotationSpeed;
+
+                    if (cloud.group.position.x > 400) {
+                        cloud.group.position.x = -400;
+                    }
+                });
+            }
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+
+</html>
