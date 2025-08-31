@@ -384,7 +384,6 @@
         };
 
         let lightningIntensity = 5;
-        let isMobile = false;
 
         // Tornado categories with Enhanced Fujita Scale data
         const tornadoCategories = {
@@ -398,7 +397,7 @@
                 speed: [86, 110],
                 color: '#4ecdc4',
                 description: 'Moderate tornado. Causes moderate damage, peels surface off roofs.',
-                details: 'EF1 tornadoes spin at 86–110 mph and can stick around for 1 to 20 minutes. They rip off parts of roofs, flip cars, and send debris flying. Annual statistics show hundreds of injuries from EF1s, and damages often run into the millions of dollars despite being considered “moderate.”'
+                details: 'EF1 tornadoes spin at 86–110 mph and can stick around for 1 to 20 minutes. They rip off parts of roofs, flip cars, and send debris flying. Annual statistics show hundreds of injuries from EF1s, and damages often run into the millions of dollars despite being considered "moderate."'
             },
             'EF2': {
                 speed: [111, 135],
@@ -439,7 +438,7 @@
                 title: "Rope Tornado",
                 description: "A narrow, snake-like tornado often seen during the tornado's weakening or dissipating stage. Despite their fragile appearance, rope tornadoes can still be destructive.",
                 characteristics: "Thin, elongated, serpentine funnel with irregular or twisting shapes. They can contort dramatically as the parent storm weakens.",
-                formation: "Forms when the tornado’s circulation begins to lose strength, stretching into a rope-like appearance as the vortex thins and dissipates."
+                formation: "Forms when the tornado's circulation begins to lose strength, stretching into a rope-like appearance as the vortex thins and dissipates."
             },
             wedge: {
                 title: "Wedge Tornado",
@@ -479,7 +478,7 @@
             },
             'elephant-trunk': {
                 title: "Elephant Trunk Tornado",
-                description: "A tornado with a thin, flexible, and often curved appearance resembling an elephant’s trunk. It is often one of the more visually dramatic tornado forms.",
+                description: "A tornado with a thin, flexible, and often curved appearance resembling an elephant's trunk. It is often one of the more visually dramatic tornado forms.",
                 characteristics: "Slender funnel that curves or bends as it extends toward the ground. It may sway and oscillate due to variations in wind patterns.",
                 formation: "Occurs when differing upper-level and lower-level winds cause the funnel to bend or tilt, shaping its trunk-like appearance."
             },
@@ -508,35 +507,32 @@
             },
             core: {
                 title: "Core Zone – Maximum Circulation",
-                description: "The zone of peak intensity where the tornado’s narrowest and fastest winds occur, often exceeding 200 mph (322 km/h).",
-                details: "This is where the Enhanced Fujita (EF) scale’s EF4–EF5 destruction happens. Houses can be completely swept off foundations, and vehicles thrown over a mile. Radar scans show rapid Doppler velocity couplets here.",
+                description: "The zone of peak intensity where the tornado's narrowest and fastest winds occur, often exceeding 200 mph (322 km/h).",
+                details: "This is where the Enhanced Fujita (EF) scale's EF4–EF5 destruction happens. Houses can be completely swept off foundations, and vehicles thrown over a mile. Radar scans show rapid Doppler velocity couplets here.",
                 bizarre: "Objects pulled into the core have been reported to vanish into the funnel and reappear miles away, sometimes completely intact—like chickens plucked of feathers but still alive, or money scattered over entire counties."
             },
             inner: {
                 title: "Inner Zone – Downdraft & Intense Rotation",
                 description: "A region of violent winds spiraling downward and inward, concentrating destructive power just outside the core.",
                 details: "Winds here can strip asphalt off roads, debark trees, and scour farmland down to bare soil. The chaotic turbulence makes survival nearly impossible without underground shelter.",
-                bizarre: "Eyewitnesses in rare cases claim to have seen fish, frogs, and even turtles raining down from this zone—likely sucked from ponds and rivers by the tornado’s powerful suction vortices."
+                bizarre: "Eyewitnesses in rare cases claim to have seen fish, frogs, and even turtles raining down from this zone—likely sucked from ponds and rivers by the tornado's powerful suction vortices."
             },
             middle: {
                 title: "Middle Zone – Main Circulation Column",
                 description: "The dominant rotating column of air, carrying huge amounts of debris upward in a helical motion.",
                 details: "This zone feeds energy toward the core and eye. It contains multiple suction vortices that orbit each other at terrifying speeds, each capable of causing localized EF5 damage inside an already-destructive tornado.",
-                bizarre: "Farm machinery weighing several tons has been found embedded in fields miles away, hurled by the middle zone’s vortices with force comparable to explosive artillery."
+                bizarre: "Farm machinery weighing several tons has been found embedded in fields miles away, hurled by the middle zone's vortices with force comparable to explosive artillery."
             },
             outer: {
                 title: "Outer Zone – Inflow & Updraft Region",
                 description: "The vast area of inflow winds that spiral toward the tornado, feeding it with warm, moist air from miles away.",
-                details: "Strong inflow jets can exceed 60–100 mph (97–161 km/h) and drag loose objects, dust, and debris across the ground toward the funnel. This region helps maintain the tornado’s energy cycle.",
+                details: "Strong inflow jets can exceed 60–100 mph (97–161 km/h) and drag loose objects, dust, and debris across the ground toward the funnel. This region helps maintain the tornado's energy cycle.",
                 bizarre: "People outside the visible funnel sometimes report being pulled off their feet and dragged horizontally toward the tornado, even when they thought they were at a safe distance. In rare cases, clothing was stripped from survivors without major injuries."
             }
         };
 
         // Initialize the simulation
         function init() {
-            // Detect mobile
-            isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
-
             // Create scene
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x1a1a2e, 100, 1000);
@@ -545,12 +541,12 @@
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
             camera.position.set(0, 50, 120);
 
-            // Create renderer
-            renderer = new THREE.WebGLRenderer({ antialias: !isMobile });
+            // Create renderer with full quality settings
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setClearColor(0x0f0f1e);
-            renderer.shadowMap.enabled = !isMobile;
+            renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             document.getElementById('container').appendChild(renderer.domElement);
@@ -709,7 +705,7 @@
         }
 
         function createRain() {
-            if (!effectsEnabled.rain || isMobile) return;
+            if (!effectsEnabled.rain) return;
 
             const rainCount = 5000;
             const rainGeometry = new THREE.BufferGeometry();
@@ -845,13 +841,11 @@
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
             directionalLight.position.set(100, 200, 100);
-            directionalLight.castShadow = !isMobile;
-            if (!isMobile) {
-                directionalLight.shadow.mapSize.width = 2048;
-                directionalLight.shadow.mapSize.height = 2048;
-                directionalLight.shadow.camera.near = 0.5;
-                directionalLight.shadow.camera.far = 500;
-            }
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
             scene.add(directionalLight);
 
             // Add subtle rim light
@@ -931,7 +925,7 @@
 
                 const material = new THREE.PointsMaterial({
                     color: zoneColors[zoneIndex],
-                    size: isMobile ? 0.6 + zoneIndex * 0.08 : 0.8 + zoneIndex * 0.1,
+                    size: 0.8 + zoneIndex * 0.1,
                     map: texture,
                     transparent: true,
                     opacity: 0.95,
