@@ -537,12 +537,6 @@
             // Detect mobile
             isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
 
-            // Adjust for mobile performance
-            if (isMobile) {
-                particleCount = 15000;
-                effectsEnabled.rain = false; // Disable rain on mobile by default
-            }
-
             // Create scene
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x1a1a2e, 100, 1000);
